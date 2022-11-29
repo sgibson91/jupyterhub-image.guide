@@ -91,51 +91,59 @@ RUN echo "Installing Mambaforge..." \
 
 Let's explain what exactly is going on here.
 
-1. The `FROM` line specifies which docker image and version we want to use.
-2. We set a `CONDA_DIR` environment variable with the path to where we want to install `mamba`. While many
-   conda installs are put in `/opt/conda`, we choose to put it in `/srv/conda` still to match what `repo2docker`
-   does.
+### The Base Image 
 
-   ```{note}
-   Why is it called CONDA_DIR while we are installing mamba? Backwards compatibility, and the fact that we are
-   still using the conda *ecosystem* heavily - particularly [conda-forge](https://conda-forge.org/).
-   ```
-   
-   %TODO: Clarify `mamba` vs `conda environment` vs `conda package` vs `conda-forge`
+The `FROM` line specifies which docker image and version we want to use.
 
-3. We set the `PATH` environment variable to include `${CONDA_DIR}/bin`, so users can invoke various software
-   tools (like `python`) we install via `mamba` without having to specify the full path. This is also required
-   for JupyterHub to use the image - we will install `jupyterhub-singleuser` into this conda environment later,
-   and adding this directory to `PATH` allows jupyterhub to start `jupyterhub-singleuser` without having to 
-   know where *exactly* it is installed.
+### Setting location of the conda environment
+
+We set a `CONDA_DIR` environment variable with the path to where we want to
+install the conda environment. While many conda installs are put in
+`/opt/conda`, we choose to put it in `/srv/conda` still to match what
+`repo2docker` does.
+
+```{note}
+Why is it called CONDA_DIR while we are installing mamba? Backwards compatibility, and the fact that we are
+still using the conda *ecosystem* heavily - particularly [conda-forge](https://conda-forge.org/).
+```
    
-4. The Dockerfile [ENV](https://docs.docker.com/engine/reference/builder/#env) directive sets up environment
-   variables inherited by all the processes started by JupyterHub inside the container. **However**, RStudio
-   Server does *not* inherit these! This is mostly due to how RStudio Server starts - by daemonizing itself
-   using the technique of the ancient powerful ones, [double forking](https://stackoverflow.com/questions/881388/what-is-the-reason-for-performing-a-double-fork-when-creating-a-daemon).
+%TODO: Clarify `mamba` vs `conda environment` vs `conda package` vs `conda-forge`
+
+
+### Making tools in the conda environment available on `${PATH}`
+
+We set the `PATH` environment variable to include `${CONDA_DIR}/bin`, so users can invoke various software
+tools (like `python`) we install via `mamba` without having to specify the full path. This is also required
+for JupyterHub to use the image - we will install `jupyterhub-singleuser` into this conda environment later,
+and adding this directory to `PATH` allows jupyterhub to start `jupyterhub-singleuser` without having to 
+know where *exactly* it is installed.
+
+#### Special considerations for environment variables inside RStudio
    
-   So for env variables to take effect inside RStudio, they need to be added to an [`Renviron.site`](https://support.posit.co/hc/en-us/articles/360047157094-Managing-R-with-Rprofile-Renviron-Rprofile-site-Renviron-site-rsession-conf-and-repos-conf). Add one line per file with the value of the
-   environment variable you want, and it shall be loaded by RStudio on startup.
+The Dockerfile [ENV](https://docs.docker.com/engine/reference/builder/#env) directive sets up environment
+variables inherited by all the processes started by JupyterHub inside the container. **However**, RStudio
+Server does *not* inherit these! This is mostly due to how RStudio Server starts - by daemonizing itself
+using the technique of the ancient powerful ones, [double forking](https://stackoverflow.com/questions/881388/what-is-the-reason-for-performing-a-double-fork-when-creating-a-daemon).
    
-   But wait, what does `PATH=${PATH}` do?! How does *that* work? If you look at the documentation for the
-   Dockerfule [RUN](https://docs.docker.com/engine/reference/builder/#run) directive, `RUN echo HI` is actually
-   equivalent to `RUN ["/bin/sh", "-c", "echo HI"]`! And this `/bin/sh` *does* get all the environment variables
-   declared via `ENV` upto that point, and so can expand them. So our `RUN echo "PATH=${PATH}"` gets translated
-   into `RUN ["/bin/sh", "-c", "echo \"PATH=${PATH}\"]`, and `sh` expands the `${PATH}` to the full value of
-   the environment variable as they are enclosed in double quotes. This allows us to tell RStudio Server to
-   set its `PATH` environment variable to the exact value of the `PATH` environment variable in our Dockerfile,
-   in the most roundabout way possible :)
+So for env variables to take effect in the R sessions started by RStudio, they need to be added to an [`Renviron.site`](https://support.posit.co/hc/en-us/articles/360047157094-Managing-R-with-Rprofile-Renviron-Rprofile-site-Renviron-site-rsession-conf-and-repos-conf). Add one line per file with the value of the
+environment variable you want, and it shall be loaded by R on startup when started by RStudio. This way, if
+you have code in R that looks for a python (or other) executable, it will find it in the correct place.
    
-   Aren't computers wonderful? :)
+But wait, what does `PATH=${PATH}` do?! How does *that* work? If you look at the documentation for the
+Dockerfule [RUN](https://docs.docker.com/engine/reference/builder/#run) directive, `RUN echo HI` is actually
+equivalent to `RUN ["/bin/sh", "-c", "echo HI"]`! And this `/bin/sh` *does* get all the environment variables
+declared via `ENV` upto that point, and so can expand them. So our `RUN echo "PATH=${PATH}"` gets translated
+into `RUN ["/bin/sh", "-c", "echo \"PATH=${PATH}\"]`, and `sh` expands the `${PATH}` to the full value of
+the environment variable as they are enclosed in double quotes. This allows us to tell RStudio Server to
+set its `PATH` environment variable to the exact value of the `PATH` environment variable in our Dockerfile,
+in the most roundabout way possible :)
+
+RStudio Server has a terminal, and that also does not inherit environment variables set here with `ENV` - and
+since it isn't an R process, neither does it inherit environment variables set in `Renviron.site`. So instead
+we put it into `/etc/profile`, which is loaded by the Terminal inside RStudio since it starts `bash` with the
+`-l` argument - which causes it to read `/etc/profile`! We use the same variable expansion trick as we did
+in the previous step as well.
    
-   %TODO: Clarify that RStudio itself still doesn't get these env vars, but R sessions started by it do.
-   
-5. RStudio Server has a terminal, and that also does not inherit environment variables set here with `ENV` - and
-   since it isn't an R process, neither does it inherit environment variables set in `Renviron.site`. So instead
-   we put it into `/etc/profile`, which is loaded by the Terminal inside RStudio since it starts `bash` with the
-   `-l` argument - which causes it to read `/etc/profile`! We use the same variable expansion trick as we did
-   in the previous step as well.
-   
-    
-   
+Aren't computers wonderful? :)
+
 

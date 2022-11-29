@@ -133,11 +133,14 @@ you have code in R that looks for a python (or other) executable, it will find i
 But wait, what does `PATH=${PATH}` do?! How does *that* work? If you look at the documentation for the
 Dockerfule [RUN](https://docs.docker.com/engine/reference/builder/#run) directive, `RUN echo HI` is actually
 equivalent to `RUN ["/bin/sh", "-c", "echo HI"]`! And this `/bin/sh` *does* get all the environment variables
-declared via `ENV` upto that point, and so can expand them. So our `RUN echo "PATH=${PATH}"` gets translated
-into `RUN ["/bin/sh", "-c", "echo \"PATH=${PATH}\"]`, and `sh` expands the `${PATH}` to the full value of
-the environment variable as they are enclosed in double quotes. This allows us to tell RStudio Server to
-set its `PATH` environment variable to the exact value of the `PATH` environment variable in our Dockerfile,
-in the most roundabout way possible :)
+declared via `ENV` upto that point, and so can [expand
+them](https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html).
+So our `RUN echo "PATH=${PATH}"` gets translated into `RUN ["/bin/sh", "-c",
+"echo \"PATH=${PATH}\"]`, and `sh` expands the `${PATH}` to the full value of
+the environment variable as they are enclosed in double quotes. This allows us
+to tell RStudio Server to set its `PATH` environment variable to the exact value
+of the `PATH` environment variable in our Dockerfile, in the most roundabout way
+possible :)
 
 RStudio Server has a terminal, and that also does not inherit environment variables set here with `ENV` - and
 since it isn't an R process, neither does it inherit environment variables set in `Renviron.site`. So instead

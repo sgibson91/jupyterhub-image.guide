@@ -174,3 +174,27 @@ our end users to constantl re-install packages inside the container while they a
 so we can save some disk space by cleaning these up before we finish the `RUN` directive. Note that these all
 need to be part of the same command, otherwise there will be no space saving! See [this wonderful blog post]( https://jcristharif.com/conda-docker-tips.html)
 for more details.
+
+## Step 4: Installing Python Packages with an `environment.yml` file
+
+Now that we have *python* installed, it's time to install a few python packages in the conda
+environment. While we *could* use an `environment.yml` file here, let's instead do the simplest
+possible thing and install using `mamba` commands in the `Dockerfile`.
+
+```dockerfile
+RUN mamba install -c conda-forge --yes \
+        "jupyterhub-singleuser>=3.0" \
+        "jupyter-rsession-proxy>=2.0" \
+    && mamba clean -afy \
+    && find ${CONDA_DIR} -follow -type f -name '*.a' -delete \
+    && find ${CONDA_DIR} -follow -type f -name '*.pyc' -delete
+```
+
+We install two packages here - [jupyterhub-singleuser](https://anaconda.org/conda-forge/jupyterhub-singleuser)
+(required for any image to work with JupyterHub), and [jupyter-rsession-proxy](https://anaconda.org/conda-forge/jupyter-rsession-proxy)
+(provides working RStudio Server support within JupyterHub). We cleanup after ourselves to keep image size
+to a minimum - we will have to do this after every `mamba` command for the most part!
+
+## Step 5: Install additional R Packages
+
+## (Optional) Step 6: Install Jupyter Notebook with R support

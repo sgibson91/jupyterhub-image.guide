@@ -76,10 +76,11 @@ RUN echo "PATH=${PATH}" >> /usr/local/lib/R/etc/Renviron.site
 # from /etc/profile - so we rexport here.
 RUN echo "export PATH=${PATH}" >> /etc/profile
 
-# Install latest mambaforge in ${CONDA_DIR}
+# Install a specific version of mambaforge in ${CONDA_DIR}
+# Pick latest version from https://github.com/conda-forge/miniforge/releases
+ENV MAMBAFORGE_VERSION=22.9.0-2
 RUN echo "Installing Mambaforge..." \
-    && URL="https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh" \
-    && wget --quiet ${URL} -O installer.sh \
+    curl -sSL "https://github.com/conda-forge/miniforge/releases/download/${MAMBAFORGE_VERSION}/Mambaforge-${MAMBAFORGE_VERSION?-Linux-$(uname -m).sh" > installer.sh \
     && /bin/bash installer.sh -u -b -p ${CONDA_DIR} \
     && rm installer.sh \
     && mamba clean -afy \
@@ -146,4 +147,27 @@ in the previous step as well.
    
 Aren't computers wonderful? :)
 
+### Installing Mambaforge
 
+We then use the [Mambaforge Installer](https://github.com/conda-forge/miniforge#mambaforge) to install
+create a conda environment at `$CONDA_DIR`. What exactly does "Mambaforge" give us?
+
+1. A conda environment set to install packages from the community maintained [conda-forge](https://conda-forge.org/)
+   channel, filled with thousands of amazingly well maintained packages in python & other languages.
+2. The [mamba](https://mamba.readthedocs.io/en/latest/) package manager by default, the faster drop-in
+   replacement to the conda package manager.
+3. A *default version of Python*, based on which *version* of mambaforge we picked. Usually the version that
+   comes here is mentioned when you pick the release from the [releases page]( https://github.com/conda-forge/miniforge/releases)
+
+Notice that bit of `$(uname -m)` in there? It automatically picks either the intel CPU installer (x86_64) or the
+ARM CPU Installer (aarch64) based on what architecture we are building our image for *automatically*. This might
+not matter to you now, but ARM machines are taking over the world at an exponentially increasing rate (I am writing
+this on an ARM machine right now) - and by adding support for ARM from the start, we future-proof our image
+without a lot of extra work!
+
+Since the mambaforge installer was originally designed to be used on people's laptops, it does leave behind
+some cached files and what not that are of not much use in a docker container - after all, we do not expect
+our end users to constantl re-install packages inside the container while they are using it (for the most part),
+so we can save some disk space by cleaning these up before we finish the `RUN` directive. Note that these all
+need to be part of the same command, otherwise there will be no space saving! See [this wonderful blog post]( https://jcristharif.com/conda-docker-tips.html)
+for more details.

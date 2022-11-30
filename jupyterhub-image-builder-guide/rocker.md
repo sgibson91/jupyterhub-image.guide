@@ -35,6 +35,12 @@ fairly quickly after a new release - so it's a decent bet to just pick the lates
 tag list. Pick a fully specified version - so `4.2.2`, rather than `4.2` or `4`. This lets you keep the R version
 and base set of packages stable until explicitly bumped. You should bump the base version at least once every 6 months.
 
+So at this point, the `Dockerfile` looks like this:
+
+```dockerfile
+FROM rocker/geospatial:4.2.2
+```
+
 %TODO: Figure out what happens to package versions?!
 
 ## Step 3: Construct your Dockerfile to add Python
@@ -57,11 +63,9 @@ package manager. Why?
    distro. While there are other ways to get arbitrary Python versions, in my experience this has been
    the easiest and most stable way.
 
-So let's build the most basic `Dockerfile` to get started!
+So let's add on to our `Dockerfile`!
 
 ```dockerfile
-FROM rocker/geospatial:4.2.2
-
 # Install conda here, to match what repo2docker does
 ENV CONDA_DIR=/srv/conda
 
@@ -91,10 +95,6 @@ RUN echo "Installing Mambaforge..." \
 ```
 
 Let's explain what exactly is going on here.
-
-### The Base Image 
-
-The `FROM` line specifies which docker image and version we want to use.
 
 ### Setting location of the conda environment
 
@@ -320,3 +320,30 @@ RUN r -e "IRkernel::installspec(prefix='${CONDA_DIR}')"
 
 We first install R package that provides the kernel, and then tell it to 'install' itself as an available
 kernel for the Jupyter installation we have. 
+
+### Tell Jupyter where to start
+
+The rocker images come with a default non-root user named `rstudio`, with a writeable home directory at `/home/rstudio`.
+While RStudio Server knows to start in `/home/rstudio`, Jupyter does not. We have to tell it explicitly to
+start  in `/home/rstudio`, otherwise it will start in `/` and users will not be able to create notebooks there!
+
+```dockerfile
+# Explicitly specify working directory, so Jupyter knows where to start
+WORKDIR /home/rstudio
+```
+
+### Tell Jupyter to use a better shell when starting Terminals
+
+Jupyter also has the capability to launch terminals, but will default to launching `/bin/sh` as the terminal
+shell. This is not quite right, as most people expect instead for `/bin/bash` to be launched - so features like
+autocomplete and arrow keys work! We have to explicilty tell Jupyter to launch `/bin/bash` by setting the `SHELL`
+environment variable.
+
+```dockerfile
+ENV SHELL=/bin/bash
+```
+
+```{note}
+RStudio Server doesn't need this to launch `/bin/bash`, so we don't need to repeat the tricks we used in Step 3
+to set env vars for RStudio Server here.
+```

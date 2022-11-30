@@ -347,3 +347,23 @@ ENV SHELL=/bin/bash
 RStudio Server doesn't need this to launch `/bin/bash`, so we don't need to repeat the tricks we used in Step 3
 to set env vars for RStudio Server here.
 ```
+
+## Step 8: Setup zero to JupyterHub configuration for home directory
+
+When using zero-to-jupyterhub-on-k8s for running JupyterHub, the *default* persistent home directory for the
+user is mounted at `/home/jovyan`. This works for *most* cases, as the default user name for most container images
+used with JupyterHub is `jovyan`, and their home directories are set to `/home/jovyan`. **However**, since rocker's
+default username is `rstudio` and the home directory is set to `/home/rstudio`, we must explicitly tell z2jh to
+mount the user's persistent home directory there, with the following config:
+
+```yaml
+singleuser:
+  storage:
+    homeMountPath: /home/rstudio
+```
+
+```{warning}
+Without setting this, the user's persistent home directory will continue to be mounted at `/home/jovyan`, **but**
+the user will only see `/home/rstudio` by default. **This results in data loss**, as `/home/rstudio`'s contents
+are discarded when the user's server stops! You **do not want this**, so remember to set this configuration!
+```

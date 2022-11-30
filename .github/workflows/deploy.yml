@@ -8,7 +8,7 @@ on:
 
 # This job installs dependencies, build the book, and pushes it to `gh-pages`
 jobs:
-  build-and-deploy-book:
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -31,9 +31,24 @@ jobs:
       run: |
         jupyter-book build jupyterhub-image-builder-guide
 
-    # Deploy the book's HTML to gh-pages branch
-    - name: GitHub Pages action
-      uses: peaceiris/actions-gh-pages@v3.6.1
+    - name: Upload generated site
+      uses: actions/upload-pages-artifact@v1
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: jupyterhub-image-builder-guide/_build/html
+        path:  jupyterhub-image-builder-guide/_build/html
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main' # specify 'refs/heads/master' if that is your main branch
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Publish to GitHub Pages
+      id: publish
+      uses: actions/deploy-pages@v1

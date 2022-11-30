@@ -26,12 +26,12 @@ jobs:
     # Build the book
     - name: Build the book
       run: |
-        jupyter-book build jupyterhub-image-builder-guide
+        jupyter-book build content
 
     - name: Upload generated site
       uses: actions/upload-pages-artifact@v1
       with:
-        path:  jupyterhub-image-builder-guide/_build/html
+        path:  content/_build/html
 
   publish:
     needs: build

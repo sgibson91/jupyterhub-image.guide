@@ -142,11 +142,16 @@ to tell RStudio Server to set its `PATH` environment variable to the exact value
 of the `PATH` environment variable in our Dockerfile, in the most roundabout way
 possible :)
 
+So for *any* variable you want to set in your `Dockerfile` that should be reflected in R processes
+started by RStudio Server, you need to add an entry to the `Renviron.site` file.
+
 RStudio Server has a terminal, and that also does not inherit environment variables set here with `ENV` - and
 since it isn't an R process, neither does it inherit environment variables set in `Renviron.site`. So instead
 we put it into `/etc/profile`, which is loaded by the Terminal inside RStudio since it starts `bash` with the
 `-l` argument - which causes it to read `/etc/profile`! We use the same variable expansion trick as we did
-in the previous step as well.
+in the previous step as well. You need to do this too for any env variable you want to set in your
+`Dockerfile` that you want reflected in terminals opened from within RStudio.
+
    
 Aren't computers wonderful? :)
 
@@ -192,6 +197,7 @@ channels:
 dependencies:
 - jupyterhub-singleuser>=3.0
 - jupyter-rsession-proxy>=2
+- nbgitpuller>=1.1.1
 ```
 
 This is the absolute *minimal* `environment.yml` file you need. Let's unpack what it has!
@@ -219,11 +225,14 @@ Specifying `conda-forge` and `nodefaults` is most likely all you will need!
 
 ### `dependencies`
 
-This lists the conda packages we want to install in our environment. The two
-packages we *must* add at a minimum are
-[jupyterhub-singleuser](https://anaconda.org/conda-forge/jupyterhub-singleuser)
-(required for any image to work with JupyterHub), and
-[jupyter-rsession-proxy](https://anaconda.org/conda-forge/jupyter-rsession-proxy)
+This lists the conda packages we want to install in our environment. The packages we *must* 
+add at a minimum are:
+1. [jupyterhub-singleuser](https://anaconda.org/conda-forge/jupyterhub-singleuser),
+   required for any image to work with JupyterHub
+2. [jupyter-rsession-proxy](https://github.com/jupyterhub/jupyter-rsession-proxy),
+   provides support for RStudio Server to work within JupyterHub.
+3. [nbgitpuller](https://github.com/jupyterhub/nbgitpuller/), very commonly used to distribute
+   notebooks
 (provides working RStudio Server support within JupyterHub). You can add additional packages here if
 you wish.
 
@@ -302,6 +311,7 @@ channels:
 dependencies:
 - jupyterhub-singleuser>=3.0
 - jupyter-rsession-proxy>=2
+- nbgitpuller>=1.1.1
 - jupyterlab>=3.0
 - retrolab
 ```

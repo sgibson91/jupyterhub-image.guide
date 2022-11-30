@@ -178,23 +178,83 @@ for more details.
 ## Step 4: Installing Python Packages with an `environment.yml` file
 
 Now that we have *python* installed, it's time to install a few python packages in the conda
-environment. While we *could* use an `environment.yml` file here, let's instead do the simplest
-possible thing and install using `mamba` commands in the `Dockerfile`.
+environment.
+
+First, we create an `environment.yml` file listing the packages we want installed. This is a [standard
+format](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#create-env-file-manually)
+used in the conda ecosystem.
+
+```yaml
+channels:
+- conda-forge
+- nodefaults
+
+dependencies:
+- jupyterhub-singleuser>=3.0
+- jupyter-rsession-proxy>=2
+```
+
+This is the absolute *minimal* `environment.yml` file you need. Let's unpack what it has!
+
+### `channels`
+
+conda packages are organized into [channels](https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/channels.html),
+which are locations where packages are stored. The most common ones are:
+
+1. The [conda-forge](https://anaconda.org/conda-forge) channel, containing packages built by the massive
+   [conda-forge](https://conda-forge.org/) community. This is where we *want* most of our packages to come
+   from.
+2. The "defaults" channel, which contains packages managed by [Anaconda.com](https://www.anaconda.com/),
+   primarily for use with their [Anaconda Python Distribution](https://www.anaconda.com/products/distribution).
+   This is **always** present by default, but since packages present in this are also usually present in the
+   conda-forge channel, accidental mixing can be confusing and problematic.
+3. The special "nodefaults" channel, which removes the "defaults" channel from being considered for package
+   installation! You should always include this when building container images
+4. The [nvidia](https://anaconda.org/nvidia/) channel, containing a mix of proprietary & open source packages
+   for use with NVidia's CUDA ecosystem. You don't need this unless you are building stuff that uses a GPU.
+   
+Specifying `conda-forge` and `nodefaults` is most likely all you will need!
+
+%TODO: Move this out somewhere else and crosslink?
+
+### `dependencies`
+
+This lists the conda packages we want to install in our environment. The two
+packages we *must* add at a minimum are
+[jupyterhub-singleuser](https://anaconda.org/conda-forge/jupyterhub-singleuser)
+(required for any image to work with JupyterHub), and
+[jupyter-rsession-proxy](https://anaconda.org/conda-forge/jupyter-rsession-proxy)
+(provides working RStudio Server support within JupyterHub). You can add additional packages here if
+you wish.
+
+```{note}
+We explicitly chose to *not* specify a python version here, so we just use the version of python
+that mambaforge installs by default. This keeps the image size small! If you want a newer version of
+python, I recommend changing the version of Mambaforge you are installing
+```
+
+### Installing the packages into the existing environment
+
+Now that we have the `environment.yml` file, we can add it to our `Dockerfile` and install those packages
+into the environment.
+
 
 ```dockerfile
-RUN mamba install -c conda-forge --yes \
-        "jupyterhub-singleuser>=3.0" \
-        "jupyter-rsession-proxy>=2.0" \
+COPY environment.yml /tmp/environment.yml
+
+RUN mamba env update -p ${CONDA_DIR} -f /tmp/environment.yml \
     && mamba clean -afy \
     && find ${CONDA_DIR} -follow -type f -name '*.a' -delete \
     && find ${CONDA_DIR} -follow -type f -name '*.pyc' -delete
 ```
 
-We install two packages here - [jupyterhub-singleuser](https://anaconda.org/conda-forge/jupyterhub-singleuser)
-(required for any image to work with JupyterHub), and [jupyter-rsession-proxy](https://anaconda.org/conda-forge/jupyter-rsession-proxy)
-(provides working RStudio Server support within JupyterHub). We cleanup after ourselves to keep image size
-to a minimum - we will have to do this after every `mamba` command for the most part!
+We also cleanup after ourselves to keep the image size to a minimum - we will
+have to do this after every `mamba` command for the most part!
 
 ## Step 5: Install additional R Packages
 
+While the base rocker image comes with a *lot* of useful libraries, you might still need to
+add more. 
+
 ## (Optional) Step 6: Install Jupyter Notebook with R support
+

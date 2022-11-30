@@ -275,7 +275,7 @@ storing downloaded packages before installation.
 
 %TODO: Figure out version pins?!
 
-## (Optional) Step 6: Install Jupyter Notebook with R support
+## Step 6: Install Jupyter Notebook with R support
 
 While most R users prefer using RStudio, there are are also many users of the Jupyter [IRkernel](https://irkernel.github.io/)
 for using R with Jupyter Notebooks. It is generally a good idea to support this too in images we build for
@@ -348,7 +348,7 @@ RStudio Server doesn't need this to launch `/bin/bash`, so we don't need to repe
 to set env vars for RStudio Server here.
 ```
 
-## Step 8: Setup zero to JupyterHub configuration for home directory
+## Step 7: Setup zero to JupyterHub configuration for home directory
 
 When using [zero-to-jupyterhub-on-k8s](https://z2jh.jupyter.org) for running JupyterHub, the *default* persistent home directory for the
 user is mounted at `/home/jovyan`. This works for *most* cases, as the default user name for most container images

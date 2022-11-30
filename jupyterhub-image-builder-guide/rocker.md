@@ -80,7 +80,7 @@ RUN echo "export PATH=${PATH}" >> /etc/profile
 # Pick latest version from https://github.com/conda-forge/miniforge/releases
 ENV MAMBAFORGE_VERSION=22.9.0-2
 RUN echo "Installing Mambaforge..." \
-    curl -sSL "https://github.com/conda-forge/miniforge/releases/download/${MAMBAFORGE_VERSION}/Mambaforge-${MAMBAFORGE_VERSION?-Linux-$(uname -m).sh" > installer.sh \
+    && curl -sSL "https://github.com/conda-forge/miniforge/releases/download/${MAMBAFORGE_VERSION}/Mambaforge-${MAMBAFORGE_VERSION}-Linux-$(uname -m).sh" > installer.sh \
     && /bin/bash installer.sh -u -b -p ${CONDA_DIR} \
     && rm installer.sh \
     && mamba clean -afy \

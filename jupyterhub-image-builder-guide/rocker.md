@@ -350,7 +350,7 @@ to set env vars for RStudio Server here.
 
 ## Step 8: Setup zero to JupyterHub configuration for home directory
 
-When using zero-to-jupyterhub-on-k8s for running JupyterHub, the *default* persistent home directory for the
+When using [zero-to-jupyterhub-on-k8s](https://z2jh.jupyter.org) for running JupyterHub, the *default* persistent home directory for the
 user is mounted at `/home/jovyan`. This works for *most* cases, as the default user name for most container images
 used with JupyterHub is `jovyan`, and their home directories are set to `/home/jovyan`. **However**, since rocker's
 default username is `rstudio` and the home directory is set to `/home/rstudio`, we must explicitly tell z2jh to

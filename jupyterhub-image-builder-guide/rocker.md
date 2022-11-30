@@ -254,7 +254,69 @@ have to do this after every `mamba` command for the most part!
 ## Step 5: Install additional R Packages
 
 While the base rocker image comes with a *lot* of useful libraries, you might still need to
-add more. 
+add more. While there are many ways to install R packages, I recommend using the
+[install2.r](https://rocker-project.org/use/extending.html#install2.r) command that comes
+with rocker by default (via the [littler](https://github.com/eddelbuettel/littler) project).
+
+By default, packages will be installed from [packagemanager.rstudio.com](https://packagemanager.rstudio.com/client/),
+which provides optimized binary installs that install quite quickly!
+
+```dockerfile
+RUN install2.r --skipinstalled \
+    package1 \
+    package2 \
+    && rm -rf /tmp/downloaded_packages
+```
+
+This will fetch appropriate versions of `package1`, `package2`, etc and install them *only if they are not
+already installed*. If you don't specify `--skipinstalled`, packages from the base image might keep getting
+reinstalled - wasting time and space. We cleanup after ourselves by deleting temporary directories used for
+storing downloaded packages before installation.
+
+%TODO: Figure out version pins?!
 
 ## (Optional) Step 6: Install Jupyter Notebook with R support
 
+While most R users prefer using RStudio, there are are also many users of the Jupyter [IRkernel](https://irkernel.github.io/)
+for using R with Jupyter Notebooks. It is generally a good idea to support this too in images we build for
+R users.
+
+### Install Jupyter frontends (JupyterLab & RetroLab)
+
+First, we install a couple of Jupyter frontends that people can use to edit their notebooks by adding
+them under `dependencies` to the `environment.yml`. Without this, there won't be any Jupyter frontends
+for people to use for reading / writing Jupyter Notebooks!
+
+I recommend installing the
+[`jupyterlab`](https://github.com/jupyterlab/jupyterlab/) and
+[`retrolab`](https://github.com/jupyterlab/retrolab) frontends. The former provides an IDE-like experience,
+while the latter provides a much simpler single-document experience!
+
+With these added, the `environment.yml` would look something like:
+
+```yaml
+channels:
+- conda-forge
+- nodefaults
+
+dependencies:
+- jupyterhub-singleuser>=3.0
+- jupyter-rsession-proxy>=2
+- jupyterlab>=3.0
+- retrolab
+```
+
+### Install the R Kernel for Jupyter (`IRkernel`)
+
+Now that Jupyter frontends are installed, we need to install the [Jupyter R Kernel](https://irkernel.github.io/).
+Without this, only the default Python kernel would be available.
+
+```dockerfile
+RUN install2.r --skipinstalled IRkernel \
+    && rm -rf /tmp/downloaded_packages
+    
+RUN r -e "IRkernel::installspec(prefix='${CONDA_DIR}')"
+```
+
+We first install R package that provides the kernel, and then tell it to 'install' itself as an available
+kernel for the Jupyter installation we have. 

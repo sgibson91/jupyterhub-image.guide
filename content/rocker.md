@@ -363,6 +363,8 @@ singleuser:
 ```
 
 ```{warning}
+**NOT SETTING THIS *WILL* RESULT IN USER DATA LOSS**.
+
 Without setting this, the user's persistent home directory will continue to be mounted at `/home/jovyan`, **but**
 the user will only see `/home/rstudio` by default. **This results in data loss**, as `/home/rstudio`'s contents
 are discarded when the user's server stops! You **do not want this**, so remember to set this configuration!

@@ -367,10 +367,18 @@ default username is `rstudio` and the home directory is set to `/home/rstudio`, 
 mount the user's persistent home directory there, with the following config:
 
 ```yaml
+hub:
+  config:
+    KubeSpawner:
+      working_dir: /home/rstudio
+      
 singleuser:
   storage:
     homeMountPath: /home/rstudio
 ```
+
+This config also tells Notebook Extensions (such as [nbgitpuller](https://github.com/jupyterhub/nbgitpuller)
+where to start.
 
 ```{warning}
 **NOT SETTING THIS *WILL* RESULT IN USER DATA LOSS**.

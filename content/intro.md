@@ -42,4 +42,4 @@ The 4 methods I want to cover in this book are:
 4. Building your own image from scratch, with a `Dockerfile`.
 
 As with life, there are trade-offs in making this choice. This book's primary
-choice is to help you make this choice, and follow-through with it.
+objective is to help you make this choice, and follow-through with it.
